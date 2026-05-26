@@ -1,8 +1,8 @@
 torch==2.9.0
 torchvision==0.24.0
-streamlit==1.35.0
-numpy==1.26.4
-Pillow==10.3.0
-scikit-learn==1.4.2
-matplotlib==3.9.0
-seaborn==0.13.2
+streamlit
+numpy
+Pillow
+scikit-learn
+matplotlib
+seaborn
