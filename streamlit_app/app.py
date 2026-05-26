@@ -41,7 +41,13 @@ def load_model():
         nn.Linear(128, 2)
     )
     if os.path.exists(MODEL_PATH):
-        model.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE))
+        state_dict = torch.load
+        (
+           MODEL_PATH,
+           map_location=DEVICE,
+           weights_only=False
+        )
+        model.load_state_dict(state_dict)
         model.to(DEVICE).eval()
         return model
     return None
