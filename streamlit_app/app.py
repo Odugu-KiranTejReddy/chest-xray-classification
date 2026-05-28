@@ -1,8 +1,3 @@
-"""
-Chest X-Ray Pneumonia Classifier — Streamlit Web App
-Run locally : streamlit run streamlit_app/app.py
-"""
-
 import os
 import numpy as np
 from PIL import Image
@@ -18,7 +13,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-DEVICE      = "cuda" if torch.cuda.is_available() else "cpu"
+DEVICE      = "cpu"
 IMG_SIZE    = 224
 MODEL_PATH  = "models/best_model.pth"
 CLASS_NAMES = ["NORMAL", "PNEUMONIA"]
@@ -36,26 +31,26 @@ def load_model():
     model = models.densenet121(weights=None)
     in_f  = model.classifier.in_features
     model.classifier = nn.Sequential(
-        nn.Linear(in_f, 512), nn.ReLU(), nn.Dropout(0.4),
-        nn.Linear(512, 128),  nn.ReLU(), nn.Dropout(0.3),
+        nn.Linear(in_f, 512),
+        nn.ReLU(),
+        nn.Dropout(0.4),
+        nn.Linear(512, 128),
+        nn.ReLU(),
+        nn.Dropout(0.3),
         nn.Linear(128, 2)
     )
     if os.path.exists(MODEL_PATH):
-        state_dict = torch.load
-        (
-           MODEL_PATH,
-           map_location=DEVICE,
-           weights_only=False
+        model.load_state_dict(
+            torch.load(MODEL_PATH, map_location="cpu")
         )
-        model.load_state_dict(state_dict)
-        model.to(DEVICE).eval()
+        model.eval()
         return model
     return None
 
-def predict(image: Image.Image, model) -> dict:
-    tensor = transform(image.convert("RGB")).unsqueeze(0).to(DEVICE)
+def predict(image, model):
+    tensor = transform(image.convert("RGB")).unsqueeze(0)
     with torch.no_grad():
-        probs = torch.softmax(model(tensor), dim=1).squeeze().cpu().numpy()
+        probs = torch.softmax(model(tensor), dim=1).squeeze().numpy()
     pred_idx       = int(np.argmax(probs))
     pneumonia_prob = float(probs[1])
     return {
@@ -107,15 +102,16 @@ st.markdown("Upload a frontal chest X-ray — classified as **NORMAL** or **PNEU
 st.markdown("---")
 
 model = load_model()
+
 if model is None:
-    st.error("Model weights not found at `models/best_model.pth`. Please train the model first and place weights in the models/ folder.")
+    st.error("Model weights not found at models/best_model.pth. Please upload the trained model file.")
     st.stop()
 
 col1, col2 = st.columns([1, 1], gap="large")
 
 with col1:
     st.subheader("📤 Upload X-Ray Image")
-    uploaded = st.file_uploader("Supported: JPG, JPEG, PNG", type=["jpg","jpeg","png"])
+    uploaded = st.file_uploader("Supported: JPG, JPEG, PNG", type=["jpg", "jpeg", "png"])
     if uploaded:
         image = Image.open(uploaded)
         st.image(image, caption="Uploaded X-Ray", use_column_width=True)
@@ -125,11 +121,13 @@ with col2:
     if uploaded:
         with st.spinner("Analysing X-ray..."):
             result = predict(image, model)
+
         pred  = result["prediction"]
         risk  = result["risk"]
         css   = "pneumonia" if pred == "PNEUMONIA" else "normal"
         color = "#e53e3e"   if pred == "PNEUMONIA" else "#38a169"
-        icon  = "🔴" if risk=="High" else "🟡" if risk=="Moderate" else "🟢"
+        icon  = "🔴" if risk == "High" else "🟡" if risk == "Moderate" else "🟢"
+
         st.markdown(f"""
         <div class="result-box {css}">
             <p class="pred-title" style="color:{color}">{pred}</p>
@@ -150,9 +148,12 @@ with col2:
             </div>
         </div>
         """, unsafe_allow_html=True)
+
         st.markdown("---")
-        st.progress(result["pneumonia_prob"], text=f"PNEUMONIA: {result['pneumonia_prob']*100:.1f}%")
-        st.progress(result["normal_prob"],    text=f"NORMAL: {result['normal_prob']*100:.1f}%")
+        st.progress(result["pneumonia_prob"],
+                    text=f"PNEUMONIA: {result['pneumonia_prob']*100:.1f}%")
+        st.progress(result["normal_prob"],
+                    text=f"NORMAL: {result['normal_prob']*100:.1f}%")
     else:
         st.info("👈 Upload a chest X-ray on the left to get started.")
 
