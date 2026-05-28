@@ -23,7 +23,7 @@ STD         = [0.229, 0.224, 0.225]
 
 # REPLACE THIS WITH YOUR ACTUAL HUGGING FACE MODEL URL
 # Your URL should look like: https://huggingface.co/username/repo-name/resolve/main/best_model.pth
-MODEL_URL = https://huggingface.co/kirantej1234/Chest-XRay-Classification/resolve/main/best_model.pth
+MODEL_URL = "https://huggingface.co/kirantej1234/Chest-XRay-Classification/resolve/main/best_model.pth"
 
 transform = transforms.Compose([
     transforms.Resize((IMG_SIZE, IMG_SIZE)),
