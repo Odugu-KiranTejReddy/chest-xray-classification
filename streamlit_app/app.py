@@ -16,10 +16,14 @@ st.set_page_config(
 
 DEVICE      = "cpu"
 IMG_SIZE    = 224
-MODEL_PATH  = "models/best_model.pth"
+MODEL_PATH  = "best_model.pth"  # Changed to local file
 CLASS_NAMES = ["NORMAL", "PNEUMONIA"]
 MEAN        = [0.485, 0.456, 0.406]
 STD         = [0.229, 0.224, 0.225]
+
+# Only set MODEL_URL if you have a real URL
+# MODEL_URL = "https://huggingface.co/your-username/your-model/resolve/main/best_model.pth"
+MODEL_URL = None  # Set to None to disable auto-download
 
 transform = transforms.Compose([
     transforms.Resize((IMG_SIZE, IMG_SIZE)),
@@ -41,27 +45,38 @@ def load_model():
         nn.Linear(128, 2)
     )
     
-    MODEL_URL = "YOUR_HUGGINGFACE_RESOLVE_LINK"
-    MODEL_PATH = "best_model.pth"
-    
-    def download_model():
-        if not os.path.exists(MODEL_PATH):
-            response = requests.get(MODEL_URL)
+    # Optional: Download model if URL is provided and file doesn't exist
+    if MODEL_URL and not os.path.exists(MODEL_PATH):
+        try:
+            st.info(f"Downloading model from {MODEL_URL}...")
+            response = requests.get(MODEL_URL, timeout=30)
+            response.raise_for_status()
             with open(MODEL_PATH, "wb") as f:
                 f.write(response.content)
+            st.success("Model downloaded successfully!")
+        except Exception as e:
+            st.error(f"Failed to download model: {e}")
+            return None
     
-    download_model()
-    
+    # Load model weights
     if os.path.exists(MODEL_PATH):
-        state_dict = torch.load(
-            MODEL_PATH,
-            map_location="cpu",
-            weights_only=False
-        )
-        model.load_state_dict(state_dict)
-        model.eval()
-        return model
-    return None
+        try:
+            # Add weights_only=False for PyTorch 2.6+ compatibility
+            state_dict = torch.load(
+                MODEL_PATH,
+                map_location=DEVICE,
+                weights_only=False  # Important for PyTorch 2.6+
+            )
+            model.load_state_dict(state_dict)
+            model.eval()
+            return model
+        except Exception as e:
+            st.error(f"Error loading model: {e}")
+            return None
+    else:
+        st.warning(f"Model file not found at {MODEL_PATH}")
+        st.info("Please place your trained model file 'best_model.pth' in the same directory as this app.")
+        return None
 
 def predict(image, model):
     tensor = transform(image.convert("RGB")).unsqueeze(0)
@@ -120,7 +135,7 @@ st.markdown("---")
 model = load_model()
 
 if model is None:
-    st.error("Model weights not found. Please check the model file.")
+    st.error("Model could not be loaded. Please ensure 'best_model.pth' is in the app directory.")
     st.stop()
 
 col1, col2 = st.columns([1, 1], gap="large")
@@ -130,7 +145,7 @@ with col1:
     uploaded = st.file_uploader("Supported: JPG, JPEG, PNG", type=["jpg", "jpeg", "png"])
     if uploaded:
         image = Image.open(uploaded)
-        st.image(image, caption="Uploaded X-Ray", use_column_width=True)
+        st.image(image, caption="Uploaded X-Ray", use_container_width=True)
 
 with col2:
     st.subheader("🔍 Prediction Result")
