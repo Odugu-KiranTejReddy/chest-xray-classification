@@ -41,7 +41,7 @@ def load_model():
     )
     if os.path.exists(MODEL_PATH):
         model.load_state_dict(
-            torch.load(MODEL_PATH, map_location="cpu")
+            torch.load(MODEL_PATH, map_location="cpu",weights_only=False)
         )
         model.eval()
         return model
