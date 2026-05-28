@@ -5,6 +5,8 @@ import streamlit as st
 import torch
 import torch.nn as nn
 from torchvision import transforms, models
+import requests
+import os
 
 st.set_page_config(
     page_title="Chest X-Ray Classifier",
@@ -40,9 +42,27 @@ def load_model():
         nn.Linear(128, 2)
     )
     if os.path.exists(MODEL_PATH):
-        model.load_state_dict(
-            torch.load(MODEL_PATH, map_location="cpu",weights_only=False)
+        
+
+        MODEL_URL = "YOUR_HUGGINGFACE_RESOLVE_LINK"
+        MODEL_PATH = "best_model.pth"
+
+    def download_model():
+        if not os.path.exists(MODEL_PATH):
+            response = requests.get(MODEL_URL)
+            with open(MODEL_PATH, "wb") as f:
+                f.write(response.content)
+
+download_model()
+
+        state_dict = torch.load(
+            MODEL_PATH,
+            map_location="cpu",
+            weights_only=False
         )
+
+        model.load_state_dict(state_dict)
+
         model.eval()
         return model
     return None
