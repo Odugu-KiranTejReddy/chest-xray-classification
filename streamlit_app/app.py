@@ -6,7 +6,6 @@ import torch
 import torch.nn as nn
 from torchvision import transforms, models
 import requests
-import os
 
 st.set_page_config(
     page_title="Chest X-Ray Classifier",
@@ -41,28 +40,25 @@ def load_model():
         nn.Dropout(0.3),
         nn.Linear(128, 2)
     )
-    if os.path.exists(MODEL_PATH):
-        
-
-        MODEL_URL = "YOUR_HUGGINGFACE_RESOLVE_LINK"
-        MODEL_PATH = "best_model.pth"
-
+    
+    MODEL_URL = "YOUR_HUGGINGFACE_RESOLVE_LINK"
+    MODEL_PATH = "best_model.pth"
+    
     def download_model():
         if not os.path.exists(MODEL_PATH):
             response = requests.get(MODEL_URL)
             with open(MODEL_PATH, "wb") as f:
                 f.write(response.content)
-
-download_model()
-
+    
+    download_model()
+    
+    if os.path.exists(MODEL_PATH):
         state_dict = torch.load(
             MODEL_PATH,
             map_location="cpu",
             weights_only=False
         )
-
         model.load_state_dict(state_dict)
-
         model.eval()
         return model
     return None
@@ -124,7 +120,7 @@ st.markdown("---")
 model = load_model()
 
 if model is None:
-    st.error("Model weights not found at models/best_model.pth. Please upload the trained model file.")
+    st.error("Model weights not found. Please check the model file.")
     st.stop()
 
 col1, col2 = st.columns([1, 1], gap="large")
